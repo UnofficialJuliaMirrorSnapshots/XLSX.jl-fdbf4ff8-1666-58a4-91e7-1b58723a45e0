@@ -339,7 +339,7 @@ function setdata!(sheet::Worksheet, rows::UnitRange{T}, col::Integer, data::Abst
     setdata!(sheet, anchor_cell_ref, data, 1)
 end
 
-function setdata!(sheet::Worksheet, ref_or_rng::AbstractString, matrix::Array{T, 2}) where {T<:CellValueType}
+function setdata!(sheet::Worksheet, ref_or_rng::AbstractString, matrix::Array{T, 2}) where {T}
     if is_valid_cellrange(ref_or_rng)
         setdata!(sheet, CellRange(ref_or_rng), matrix)
     elseif is_valid_cellname(ref_or_rng)
@@ -349,7 +349,7 @@ function setdata!(sheet::Worksheet, ref_or_rng::AbstractString, matrix::Array{T,
     end
 end
 
-function setdata!(sheet::Worksheet, ref::CellRef, matrix::Array{T, 2}) where {T<:CellValueType}
+function setdata!(sheet::Worksheet, ref::CellRef, matrix::Array{T, 2}) where {T}
     rows, cols = size(matrix)
     anchor_row = row_number(ref)
     anchor_col = column_number(ref)
@@ -359,7 +359,7 @@ function setdata!(sheet::Worksheet, ref::CellRef, matrix::Array{T, 2}) where {T<
     end
 end
 
-function setdata!(sheet::Worksheet, rng::CellRange, matrix::Array{T, 2}) where {T<:CellValueType}
+function setdata!(sheet::Worksheet, rng::CellRange, matrix::Array{T, 2}) where {T}
     @assert size(rng) == size(matrix) "Target range $rng size ($(size(rng))) must be equal to the input matrix size ($(size(matrix))) "
     setdata!(sheet, rng.start, matrix)
 end
@@ -482,6 +482,22 @@ function addsheet!(wb::Workbook, name::AbstractString="") :: Worksheet
 
     @assert name != ""
 
+    # checks if name is a unique sheet name
+    @assert name ∉ sheetnames(wb) "A sheet named `$name` already exists in this workbook."
+
+    function check_valid_sheetname(n::AbstractString)
+        max_length = 31
+        @assert(length(n) <= max_length,
+                "Invalid sheetname $n: must have at most $max_length characters. Found $(length(n))"
+               )
+
+        @assert(!occursin(r"[:\\/\?\*\[\]]+", n),
+                "Sheetname cannot contain characters: ':', '\\', '/', '?', '*', '[', ']'."
+               )
+    end
+
+    check_valid_sheetname(name)
+
     # generate sheetId
     current_sheet_ids = [ ws.sheetId for ws in wb.sheets ]
     sheetId = max(current_sheet_ids...) + 1
@@ -558,7 +574,7 @@ Example using `DataFrames.jl`:
 ```julia
 import DataFrames, XLSX
 df = DataFrames.DataFrame(integers=[1, 2, 3, 4], strings=["Hey", "You", "Out", "There"], floats=[10.2, 20.3, 30.4, 40.5])
-XLSX.writetable("df.xlsx", DataFrames.columns(df), DataFrames.names(df))
+XLSX.writetable("df.xlsx", collect(DataFrames.eachcol(df)), DataFrames.names(df))
 ```
 
 See also: [`XLSX.writetable!`](@ref).
@@ -600,7 +616,7 @@ import DataFrames, XLSX
 df1 = DataFrames.DataFrame(COL1=[10,20,30], COL2=["Fist", "Sec", "Third"])
 df2 = DataFrames.DataFrame(AA=["aa", "bb"], AB=[10.1, 10.2])
 
-XLSX.writetable("report.xlsx", REPORT_A=( DataFrames.columns(df1), DataFrames.names(df1) ), REPORT_B=( DataFrames.columns(df2), DataFrames.names(df2) ))
+XLSX.writetable("report.xlsx", REPORT_A=( collect(DataFrames.eachcol(df1)), DataFrames.names(df1) ), REPORT_B=( collect(DataFrames.eachcol(df2)), DataFrames.names(df2) ))
 ```
 """
 function writetable(filename::AbstractString; overwrite::Bool=false, kw...)

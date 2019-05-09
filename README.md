@@ -8,16 +8,16 @@
 [![dev][docs-dev-img]][docs-dev-url]
 [![stable][docs-stable-img]][docs-stable-url]
 
-[license-img]: http://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat
-[travis-img]: https://img.shields.io/travis/felipenoris/XLSX.jl/master.svg?label=Linux+/+macOS
+[license-img]: http://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat-square
+[travis-img]: https://img.shields.io/travis/felipenoris/XLSX.jl/master.svg?logo=travis&label=Linux+/+macOS&style=flat-square
 [travis-url]: https://travis-ci.org/felipenoris/XLSX.jl
-[appveyor-img]: https://img.shields.io/appveyor/ci/felipenoris/xlsx-jl/master.svg?label=Windows
+[appveyor-img]: https://img.shields.io/appveyor/ci/felipenoris/xlsx-jl/master.svg?logo=appveyor&label=Windows&style=flat-square
 [appveyor-url]: https://ci.appveyor.com/project/felipenoris/xlsx-jl/branch/master
-[codecov-img]: https://img.shields.io/codecov/c/github/felipenoris/XLSX.jl/master.svg?label=codecov
+[codecov-img]: https://img.shields.io/codecov/c/github/felipenoris/XLSX.jl/master.svg?label=codecov&style=flat-square
 [codecov-url]: http://codecov.io/github/felipenoris/XLSX.jl?branch=master
-[docs-dev-img]: https://img.shields.io/badge/docs-dev-blue.svg
+[docs-dev-img]: https://img.shields.io/badge/docs-dev-blue.svg?style=flat-square
 [docs-dev-url]: https://felipenoris.github.io/XLSX.jl/dev
-[docs-stable-img]: https://img.shields.io/badge/docs-stable-blue.svg
+[docs-stable-img]: https://img.shields.io/badge/docs-stable-blue.svg?style=flat-square
 [docs-stable-url]: https://felipenoris.github.io/XLSX.jl/stable
 
 Excel file reader/writer coded in pure Julia.

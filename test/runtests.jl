@@ -1023,11 +1023,32 @@ end
     f = XLSX.open_empty_template()
     s = XLSX.addsheet!(f, "new_sheet")
     s["A1"] = 10
+
+    @testset "check invalid sheet names" begin
+        invalid_names = [
+                         "new_sheet",
+                         "aaaaaaaaaabbbbbbbbbbccccccccccd1",
+                         "abc:def",
+                         "abcdef/",
+                         "\\aaaa",
+                         "hey?you",
+                         "[mysheet]",
+                         "asteri*"
+                        ]
+
+        for invalid_name in invalid_names
+            @test_throws AssertionError XLSX.addsheet!(f, invalid_name)
+        end
+    end
+
+    big_sheetname = "aaaaaaaaaabbbbbbbbbbccccccccccd"
+    s2 = XLSX.addsheet!(f, big_sheetname)
+
     XLSX.writexlsx(new_filename, f, overwrite=true)
     @test !XLSX.isopen(f)
 
     f = XLSX.readxlsx(new_filename)
-    @test XLSX.sheetnames(f) == [ "Sheet1", "new_sheet" ]
+    @test XLSX.sheetnames(f) == [ "Sheet1", "new_sheet" , big_sheetname ]
     rm(new_filename)
 end
 
@@ -1514,6 +1535,27 @@ end
         end
     end
 
+    @testset "write matrix with heterogeneous data types" begin
+        # issue #97
+        test_data = ["A" "B"; 1 2; "a" "b"; 0 "x"]
+        XLSX.openxlsx(filename, mode="w") do xf
+            sheet = xf[1]
+            sheet["B2"] = test_data
+        end
+
+        XLSX.openxlsx(filename, mode="r") do xf
+            sheet = xf[1]
+            @test sheet["B2"] == "A"
+            @test sheet["C2"] == "B"
+            @test sheet["B3"] == 1
+            @test sheet["C3"] == 2
+            @test sheet["B4"] == "a"
+            @test sheet["C4"] == "b"
+            @test sheet["B5"] == 0
+            @test sheet["C5"] == "x"
+        end
+    end
+
     @testset "doctest for writetable!" begin
         columns = Vector()
         push!(columns, [1, 2, 3])
@@ -1537,6 +1579,29 @@ end
             @test sheet["C3"] == "a"
             @test sheet["C4"] == "b"
             @test sheet["C5"] == "c"
+        end
+    end
+
+    @testset "openxlsx without do-syntax" begin
+        let
+            xf = XLSX.openxlsx(filename)
+            sheet = xf[1]
+            @test sheet["B2"] == "column_1"
+            close(xf)
+        end
+
+        let
+            xf = XLSX.openxlsx(filename, mode="w")
+            sheet = xf[1]
+            sheet["A1"] = "openxlsx without do-syntax"
+            XLSX.writexlsx(filename, xf, overwrite=true)
+        end
+
+        let
+            xf = XLSX.openxlsx(filename)
+            sheet = xf[1]
+            @test sheet["A1"] == "openxlsx without do-syntax"
+            close(xf)
         end
     end
 
