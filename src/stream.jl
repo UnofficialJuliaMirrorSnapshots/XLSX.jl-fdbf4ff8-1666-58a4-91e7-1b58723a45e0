@@ -67,15 +67,15 @@ end
     nothing
 end
 
-
 # Creates a reader for row elements in the Worksheet's XML.
 # Will return a stream reader positioned in the first row element if it exists.
 # If there's no row element inside sheetData XML tag, it will close all streams and return `nothing`.
 function Base.iterate(itr::SheetRowStreamIterator, state::Union{Nothing, SheetRowStreamIteratorState}=nothing)
 
+    ws = get_worksheet(itr)
+
     if state == nothing # first iteration. Will open a stream and create the first state instance
         state = let
-            ws = get_worksheet(itr)
             target_file = get_relationship_target_by_id("xl", get_workbook(ws), ws.relationship_id)
             zip_io, reader = open_internal_file_stream(get_xlsxfile(ws), target_file)
 
@@ -108,14 +108,14 @@ function Base.iterate(itr::SheetRowStreamIterator, state::Union{Nothing, SheetRo
     end
 
     # given that the first iteration case is done in the code above, we shouldn't get it again in here
-    @assert state != nothing
+    @assert state != nothing "Error processing Worksheet $(ws.name): shouldn't get first iteration case again."
 
     reader = state.xml_stream_reader
     if is_end_of_sheet_data(reader)
         @assert !isopen(state)
         return nothing
     else
-        @assert isopen(state) "Can't fetch rows from a closed workbook."
+        @assert isopen(state) "Error processing Worksheet $(ws.name): Can't fetch rows from a closed workbook."
     end
 
     # will read next row from stream.
@@ -127,30 +127,34 @@ function Base.iterate(itr::SheetRowStreamIterator, state::Union{Nothing, SheetRo
     # iterate thru row cells
     while EzXML.iterate(reader) != nothing
 
+        if is_end_of_sheet_data(reader)
+            close(state)
+            break
+        end
+
         # If this is the end of this row, will point to the next row or set the end of this stream
         if EzXML.nodetype(reader) == EzXML.READER_END_ELEMENT && EzXML.nodename(reader) == "row"
 
-            # go to the next node, but also checks if we reached EOF (in the case of malformed XML)
-            if EzXML.iterate(reader) == nothing
-                close(state)
-                error("Malformed Excel file.")
+            while true
+                if is_end_of_sheet_data(reader)
+                    close(state)
+                    break
+                elseif EzXML.nodetype(reader) == EzXML.READER_ELEMENT && EzXML.nodename(reader) == "row"
+                    break
+                end
+
+                @assert EzXML.iterate(reader) != nothing
             end
 
-            if is_end_of_sheet_data(reader)
 
-                # marks the end of the row
-                close(state)
-                break
-
-            else
-                # make sure we're pointing to the next row node
-                @assert EzXML.nodetype(reader) == EzXML.READER_ELEMENT && EzXML.nodename(reader) == "row"
-            end
+            # breaks while loop to return current row
             break
-        elseif EzXML.nodetype(reader) == EzXML.READER_ELEMENT && EzXML.nodename(reader) == "c"
-            cell = Cell( EzXML.expandtree(reader) )
-            @assert row_number(cell) == current_row "Inconsistent state: expected row number $(current_row), but cell has row number $(row_number(cell))"
 
+        elseif EzXML.nodetype(reader) == EzXML.READER_ELEMENT && EzXML.nodename(reader) == "c"
+
+            # reads current cell to rowcells
+            cell = Cell( EzXML.expandtree(reader) )
+            @assert row_number(cell) == current_row "Error processing Worksheet $(ws.name): Inconsistent state: expected row number $(current_row), but cell has row number $(row_number(cell))"
             rowcells[column_number(cell)] = cell
 
         elseif EzXML.nodetype(reader) == EzXML.READER_ELEMENT && EzXML.nodename(reader) == "row"
@@ -166,7 +170,7 @@ function Base.iterate(itr::SheetRowStreamIterator, state::Union{Nothing, SheetRo
     return sheet_row, state
 end
 
-#Detects a closing sheetData element
+# Detects a closing sheetData element
 @inline is_end_of_sheet_data(r::EzXML.StreamReader) = (EzXML.nodedepth(r) <= 1) || (EzXML.nodetype(r) == EzXML.READER_END_ELEMENT && EzXML.nodename(r) == "sheetData")
 
 #
