@@ -3,7 +3,7 @@ uuid = "fdbf4ff8-1666-58a4-91e7-1b58723a45e0"
 license = "MIT"
 authors = ["Felipe Noronha <felipenoris@gmail.com>"]
 repo = "https://github.com/felipenoris/XLSX.jl.git"
-version = "0.5.8"
+version = "0.5.9"
 
 [deps]
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
@@ -12,7 +12,9 @@ Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 ZipFile = "a5390f91-8eb1-5f08-bee0-b1d1ffed6cea"
 
 [compat]
-julia = "0.7, 1"
+EzXML = "0.9.4"
+ZipFile = "0.8.3"
+julia = "1"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
